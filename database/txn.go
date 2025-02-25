@@ -15,11 +15,13 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/dgo/v240"
 	"gorm.io/gorm"
 )
 
@@ -31,6 +33,7 @@ type Txn struct {
 	readWrite   bool
 	blobTxn     *badger.Txn
 	metadataTxn *gorm.DB
+	graphTxn    *dgo.Txn
 }
 
 func NewTxn(db Database, readWrite bool) *Txn {
@@ -39,6 +42,7 @@ func NewTxn(db Database, readWrite bool) *Txn {
 		readWrite:   readWrite,
 		blobTxn:     db.Blob().NewTransaction(readWrite),
 		metadataTxn: db.Metadata().Begin(),
+		graphTxn:    db.Graphdata().NewTxn(),
 	}
 }
 
@@ -48,6 +52,10 @@ func (t *Txn) Metadata() *gorm.DB {
 
 func (t *Txn) Blob() *badger.Txn {
 	return t.blobTxn
+}
+
+func (t *Txn) Graphdata() *dgo.Txn {
+	return t.graphTxn
 }
 
 // Do executes the specified function in the context of the transaction. Any errors returned will result
@@ -94,6 +102,11 @@ func (t *Txn) Commit() error {
 	if err := t.blobTxn.Commit(); err != nil {
 		return err
 	}
+	ctx := context.Background()
+	if err := t.graphTxn.Commit(ctx); err != nil {
+		return err
+	}
+
 	t.finished = true
 	return nil
 }

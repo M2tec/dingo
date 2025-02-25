@@ -26,15 +26,21 @@ import (
 
 	badger "github.com/dgraph-io/badger/v4"
 	"github.com/glebarez/sqlite"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
+
+	"github.com/dgraph-io/dgo/v240"
+	"github.com/dgraph-io/dgo/v240/protos/api"
 )
 
 type Database interface {
 	Close() error
 	Metadata() *gorm.DB
 	Blob() *badger.DB
+	Graphdata() *dgo.Dgraph
 	Transaction(bool) *Txn
 	updateCommitTimestamp(*Txn, int64) error
 }
@@ -43,6 +49,7 @@ type BaseDatabase struct {
 	logger        *slog.Logger
 	metadata      *gorm.DB
 	blob          *badger.DB
+	graphdata     *dgo.Dgraph
 	blobGcEnabled bool
 	blobGcTimer   *time.Ticker
 }
@@ -55,6 +62,11 @@ func (b *BaseDatabase) Metadata() *gorm.DB {
 // Blob returns the underling blob DB instance
 func (b *BaseDatabase) Blob() *badger.DB {
 	return b.blob
+}
+
+// Graphdata returns the underling dGraph DB instance
+func (b *BaseDatabase) Graphdata() *dgo.Dgraph {
+	return b.graphdata
 }
 
 // Transaction starts a new database transaction and returns a handle to it
@@ -204,6 +216,7 @@ func NewPersistent(
 	if err != nil {
 		return nil, err
 	}
+
 	// Open Badger DB
 	blobDir := filepath.Join(
 		dataDir,
@@ -217,11 +230,23 @@ func NewPersistent(
 	if err != nil {
 		return nil, err
 	}
+
+	// Open dGraph db using dgo
+	conn, err := grpc.NewClient("localhost:9080", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Conn: ", conn)
+	// defer conn.Close()
+	graphDB := dgo.NewDgraphClient(api.NewDgraphClient(conn))
+
 	db := &PersistentDatabase{
 		BaseDatabase: &BaseDatabase{
 			logger:        logger,
 			metadata:      metadataDb,
 			blob:          blobDb,
+			graphdata:     graphDB,
 			blobGcEnabled: true,
 		},
 		dataDir: dataDir,

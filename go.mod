@@ -9,6 +9,7 @@ require (
 	github.com/blinklabs-io/gouroboros v0.109.0
 	github.com/blinklabs-io/ouroboros-mock v0.3.6
 	github.com/dgraph-io/badger/v4 v4.5.1
+	github.com/dgraph-io/dgo/v240 v240.1.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.20.5
@@ -22,6 +23,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	golang.org/x/net v0.35.0
 	golang.org/x/sys v0.30.0
+	google.golang.org/grpc v1.69.4
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.25.12
 	gorm.io/plugin/opentelemetry v0.1.11
@@ -70,7 +72,6 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/grpc v1.69.4 // indirect
 	google.golang.org/protobuf v1.36.3 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect

@@ -15,14 +15,18 @@
 package state
 
 import (
+	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
 	"github.com/blinklabs-io/dingo/database"
 	"github.com/blinklabs-io/dingo/event"
 	"github.com/blinklabs-io/dingo/state/models"
+	"github.com/dgraph-io/dgo/v240/protos/api"
 
 	lcommon "github.com/blinklabs-io/gouroboros/ledger/common"
 	ocommon "github.com/blinklabs-io/gouroboros/protocol/common"
@@ -36,6 +40,17 @@ const (
 	// and a 2s Block timeout for blockfetch
 	blockfetchBusyTimeout = 5 * time.Second
 )
+
+// dGraph
+type graphBlock struct {
+	Slot       uint64 `json:"Block.slot,omitempty"`
+	Number     uint64 `json:"Block.number,omitempty"`
+	Hash       string `json:"Block.hash,omitempty"`
+	Type       uint   `json:"Block.type,omitempty"`
+	PrevHash   string `json:"Block.prevHash,omitempty"`
+	Nonce      string `json:"Block.nonce,omitempty"`
+	DgraphType string `json:"dgraph.type,omitempty"`
+}
 
 func (ls *LedgerState) handleEventChainsync(evt event.Event) {
 	ls.chainsyncMutex.Lock()
@@ -218,6 +233,7 @@ func (ls *LedgerState) processBlockEvents() error {
 		"component",
 		"ledger",
 	)
+
 	return nil
 }
 
@@ -488,6 +504,49 @@ func (ls *LedgerState) processBlockEvent(
 		Nonce:    blockNonce,
 		Cbor:     e.Block.Cbor(),
 	}
+
+	b := graphBlock{
+		Slot:       e.Point.Slot,
+		Number:     e.Block.BlockNumber(),
+		Hash:       string(e.Point.Hash),
+		Type:       e.Type,
+		PrevHash:   string(prevHashBytes),
+		Nonce:      string(blockNonce),
+		DgraphType: "Block",
+	}
+
+	// fmt.Print(b)
+
+	mu := &api.Mutation{
+		// CommitNow: true,
+	}
+	pb, err := json.Marshal(b)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mu.SetJson = pb
+
+	// fmt.Print(mu)
+	ctx := context.Background()
+
+	// assigned, err := txn.Graphdata().Mutate(ctx, mu)
+	assigned, err := txn.Graphdata().Mutate(ctx, mu)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if assigned != nil {
+
+	}
+
+	// var myslot = strconv.Itoa(int(e.Point.Slot)) + ".data"
+
+	// err = os.WriteFile(myslot, tmpBlock.Cbor, 0644)
+	if err != nil {
+		fmt.Print("err")
+	}
+
 	if err := ls.addBlock(txn, tmpBlock); err != nil {
 		return fmt.Errorf("add block: %w", err)
 	}
