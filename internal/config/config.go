@@ -41,11 +41,11 @@ type Config struct {
 
 var globalConfig = &Config{
 	BindAddr:        "0.0.0.0",
-	CardanoConfig:   "./config/cardano/preview/config.json",
+	CardanoConfig:   "./config/cardano/preprod/config.json",
 	DatabasePath:    ".dingo",
 	SocketPath:      "dingo.socket",
+	Network:         "preprod",
 	IntersectTip:    false,
-	Network:         "preview",
 	MetricsPort:     12798,
 	PrivateBindAddr: "127.0.0.1",
 	PrivatePort:     3002,
