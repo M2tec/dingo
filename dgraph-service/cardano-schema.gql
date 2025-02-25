@@ -1,0 +1,9 @@
+type Block {
+    id: ID!
+	slot: Int! @search
+	number:   Int! @search
+	hash:     String! @search
+	type:     Int
+	prevHash: String! 
+	nonce:    String
+}
